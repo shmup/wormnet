@@ -1,0 +1,440 @@
+#!/usr/bin/env -S uv run --script
+# /// script
+# dependencies = ["flask", "tomli"]
+# ///
+"""
+minimal wormnet server for worms armageddon
+implements http endpoints + basic irc server
+"""
+
+from flask import Flask, request, Response, send_from_directory
+import socket
+import threading
+import time
+import re
+import argparse
+import tomli
+from pathlib import Path
+
+# defaults
+DEFAULT_HTTP_PORT = 80
+DEFAULT_IRC_PORT = 6667
+DEFAULT_IRC_HOST = ""  # empty = auto-detect
+DEFAULT_CONNECT_PORT = None  # port to announce in <CONNECT> (None = use default 6667)
+DEFAULT_PASSWORD = "ELSILRACLIHP"
+DEFAULT_GAME_TIMEOUT = 300  # 5 minutes
+DEFAULT_CHANNELS = {
+    "AnythingGoes": {
+        "topic": "Anything goes!",
+        "icon": 0,
+        "scheme": "Pf,Be"
+    },
+    "PartyTime": {
+        "topic": "Party time!",
+        "icon": 1,
+        "scheme": "Pa,Ba"
+    }
+}
+
+# runtime config (set by load_config)
+HTTP_PORT = DEFAULT_HTTP_PORT
+IRC_PORT = DEFAULT_IRC_PORT
+IRC_HOST = DEFAULT_IRC_HOST
+CONNECT_PORT = DEFAULT_CONNECT_PORT
+PASSWORD = DEFAULT_PASSWORD
+GAME_TIMEOUT = DEFAULT_GAME_TIMEOUT
+CHANNELS = DEFAULT_CHANNELS.copy()
+MOTD_FILE = None
+NEWS_FILE = None
+
+# game storage
+games = {}
+game_counter = 0
+games_lock = threading.Lock()
+
+# irc state
+irc_clients = []
+irc_channels = {}
+irc_lock = threading.Lock()
+
+
+def _build_irc_channels():
+    """build irc channels from config"""
+    global irc_channels
+    irc_channels = {
+        f"#{name}": {
+            "users": set(),
+            "topic": f"{ch['icon']:02d} {ch['topic']}"
+        }
+        for name, ch in CHANNELS.items()
+    }
+
+
+def load_config(config_file):
+    """load configuration from TOML file"""
+    global HTTP_PORT, IRC_PORT, IRC_HOST, CONNECT_PORT, MOTD_FILE, NEWS_FILE, CHANNELS
+
+    with open(config_file, 'rb') as f:
+        config = tomli.load(f)
+
+    # load irc config
+    IRC_PORT = config.get('irc', {}).get('port', IRC_PORT)
+    IRC_HOST = config.get('irc', {}).get('ip', IRC_HOST)
+    MOTD_FILE = config.get('irc', {}).get('motd_file')
+
+    # load http config
+    HTTP_PORT = config.get('http', {}).get('port', HTTP_PORT)
+    CONNECT_PORT = config.get('http', {}).get('connect_port')
+    NEWS_FILE = config.get('http', {}).get('news_file')
+
+    # load channels
+    if 'channels' in config:
+        CHANNELS = {name: cfg for name, cfg in config['channels'].items()}
+
+    if not CHANNELS:
+        CHANNELS = DEFAULT_CHANNELS.copy()
+
+    _build_irc_channels()
+
+    print(f"Loaded config from {config_file}")
+    print(f"  HTTP port: {HTTP_PORT}")
+    print(f"  IRC port: {IRC_PORT}")
+    print(f"  IRC host: {IRC_HOST}")
+    print(f"  Channels: {', '.join(CHANNELS.keys())}")
+
+
+# flask app
+app = Flask(__name__)
+
+
+def cleanup_games():
+    """remove expired games"""
+    now = time.time()
+    with games_lock:
+        expired = [gid for gid, g in games.items() if now - g['created'] > GAME_TIMEOUT]
+        for gid in expired:
+            del games[gid]
+
+
+@app.route('/wormageddonweb/Login.asp')
+def login():
+    """tell client where irc server is"""
+    # use configured ip or auto-detect from request
+    irc_host = IRC_HOST if IRC_HOST else request.host.split(':')[0]
+    port_suffix = f":{CONNECT_PORT}" if CONNECT_PORT else ""
+    response = f"<CONNECT {irc_host}{port_suffix}>"
+
+    if NEWS_FILE and Path(NEWS_FILE).exists():
+        try:
+            news = Path(NEWS_FILE).read_text()
+            response += f"\r\n<MOTD>\r\n{news}\r\n</MOTD>"
+        except IOError:
+            pass
+
+    return response
+
+
+@app.route('/wormageddonweb/RequestChannelScheme.asp')
+def scheme():
+    """return channel scheme"""
+    chan = request.args.get('Channel')
+    if chan and chan in CHANNELS:
+        return f"<SCHEME={CHANNELS[chan]['scheme']}>"
+    return "<NOTHING>"
+
+
+@app.route('/wormageddonweb/Game.asp')
+def game():
+    """handle game creation/closing"""
+    global game_counter
+    cmd = request.args.get('Cmd')
+    cleanup_games()
+
+    if cmd == 'Create':
+        with games_lock:
+            game_counter += 1
+            games[game_counter] = {
+                'id': game_counter,
+                'name': request.args.get('Name', '')[:29],
+                'host': request.args.get('Nick', ''),
+                'address': request.args.get('HostIP', ''),
+                'password': request.args.get('Pwd'),
+                'channel': request.args.get('Chan', ''),
+                'location': request.args.get('Loc', ''),
+                'type': request.args.get('Type', '0'),
+                'created': time.time(),
+            }
+            resp = Response("<NOTHING>")
+            resp.headers['SetGameId'] = f": {game_counter}"
+            return resp
+
+    elif cmd == 'Close':
+        gid = int(request.args.get('GameID', 0))
+        with games_lock:
+            if gid in games:
+                del games[gid]
+        return "<NOTHING>"
+
+    elif cmd == 'Failed':
+        return "<NOTHING>"
+
+    return "<NOTHING>", 400
+
+
+@app.route('/wormageddonweb/GameList.asp')
+def gamelist():
+    """list active games for channel"""
+    cleanup_games()
+    chan = request.args.get('Channel')
+
+    lines = ["<GAMELISTSTART>\r\n"]
+    with games_lock:
+        for g in games.values():
+            if g['channel'] == chan:
+                pwd = 1 if g['password'] else 0
+                lines.append(f"<GAME {g['name']} {g['host']} {g['address']} "
+                             f"{g['location']} 1 {pwd} {g['id']} {g['type']}><BR>\r\n")
+    lines.append("<GAMELISTEND>\r\n")
+
+    return ''.join(lines)
+
+
+@app.route('/wormageddonweb/UpdatePlayerInfo.asp')
+def update_info():
+    """no-op for player stats"""
+    return "<NOTHING>"
+
+
+@app.route('/', defaults={'path': ''})
+@app.route('/<path:path>')
+def serve(path):
+    """serve static files from wwwroot/"""
+    wwwroot = Path(__file__).parent / "wwwroot"
+    if not wwwroot.exists():
+        return "WormNET - Server Running", 200
+
+    filepath = wwwroot / (path or "index.html")
+    if filepath.exists() and filepath.is_file():
+        return send_from_directory(wwwroot, path or "index.html")
+    return "404", 404
+
+
+# irc server
+class IRCClient:
+
+    def __init__(self, sock, addr):
+        self.sock = sock
+        self.addr = addr
+        self.nickname = None
+        self.username = None
+        self.registered = False
+        self.password = None
+        self.channels = set()
+
+    def send(self, msg):
+        """send message to client"""
+        try:
+            self.sock.sendall(f"{msg}\r\n".encode('utf-8'))
+        except (BrokenPipeError, ConnectionResetError):
+            pass
+
+    def handle(self):
+        """handle client connection"""
+        buf = ""
+        try:
+            while True:
+                data = self.sock.recv(4096).decode('utf-8', errors='ignore')
+                if not data:
+                    break
+
+                buf += data
+                while '\n' in buf:
+                    line, buf = buf.split('\n', 1)
+                    line = line.rstrip('\r')
+                    if line:
+                        self.process_line(line)
+        except (ConnectionResetError, BrokenPipeError, OSError):
+            pass
+        finally:
+            self.cleanup()
+
+    def process_line(self, line):
+        """process irc command"""
+        parts = line.split(' ')
+        cmd = parts[0].upper()
+
+        if cmd == 'PASS':
+            self.password = parts[1] if len(parts) > 1 else None
+
+        elif cmd == 'NICK':
+            if len(parts) > 1:
+                nick = parts[1]
+                # validate nickname
+                if re.match(r'^[a-zA-Z][a-zA-Z0-9\-`|\[\]{}\_^]{0,14}$', nick):
+                    self.nickname = nick
+                    self.check_registration()
+
+        elif cmd == 'USER':
+            if len(parts) >= 4:
+                self.username = parts[1]
+                self.check_registration()
+
+        elif cmd == 'PING':
+            self.send(f"PONG {IRC_HOST}")
+
+        elif cmd == 'JOIN' and self.registered:
+            if len(parts) > 1:
+                for channame in parts[1].split(','):
+                    if channame.startswith('#') and channame in irc_channels:
+                        self.channels.add(channame)
+                        with irc_lock:
+                            irc_channels[channame]["users"].add(self.nickname)
+                        self.send(f":{self.nickname} JOIN {channame}")
+                        self.send(f":{IRC_HOST} 332 {self.nickname} {channame} :{irc_channels[channame]['topic']}")
+                        self.send_names(channame)
+
+        elif cmd == 'PART' and self.registered:
+            if len(parts) > 1:
+                channame = parts[1]
+                if channame in self.channels:
+                    self.channels.remove(channame)
+                    with irc_lock:
+                        irc_channels[channame]["users"].discard(self.nickname)
+                    self.send(f":{self.nickname} PART {channame}")
+
+        elif cmd == 'PRIVMSG' and self.registered:
+            if len(parts) >= 3:
+                target = parts[1]
+                msg = ' '.join(parts[2:])[1:]  # remove leading :
+                if target.startswith('#') and target in self.channels:
+                    self.broadcast_to_channel(target, f":{self.nickname} PRIVMSG {target} :{msg}")
+
+        elif cmd == 'LIST' and self.registered:
+            self.send(f":{IRC_HOST} 321 {self.nickname} Channel :Users Name")
+            for channame, chandata in irc_channels.items():
+                usercount = len(chandata["users"])
+                self.send(f":{IRC_HOST} 322 {self.nickname} {channame} {usercount} :{chandata['topic']}")
+            self.send(f":{IRC_HOST} 323 {self.nickname} :End of /LIST")
+
+        elif cmd == 'NAMES' and self.registered:
+            if len(parts) > 1:
+                self.send_names(parts[1])
+
+        elif cmd == 'WHO' and self.registered:
+            self.send(f":{IRC_HOST} 315 {self.nickname} * :End of /WHO list")
+
+        elif cmd == 'MODE' and self.registered:
+            if len(parts) > 1:
+                # minimal mode support
+                self.send(f":{IRC_HOST} 324 {self.nickname} {parts[1]} +")
+
+        elif cmd == 'MOTD' and self.registered:
+            self.send_motd()
+
+        elif cmd == 'QUIT':
+            self.cleanup()
+
+    def check_registration(self):
+        """check if client can be registered"""
+        if self.nickname and self.username and not self.registered:
+            if self.password != PASSWORD:
+                self.send(f":{IRC_HOST} 464 * :Password incorrect")
+                self.sock.close()
+                return
+
+            self.registered = True
+            with irc_lock:
+                irc_clients.append(self)
+
+            self.send_motd()
+
+    def send_motd(self):
+        """send message of the day"""
+        self.send(f":{IRC_HOST} 375 {self.nickname} :- {IRC_HOST} Message of the Day -")
+
+        lines = []
+        if MOTD_FILE and Path(MOTD_FILE).exists():
+            try:
+                lines = Path(MOTD_FILE).read_text().splitlines()
+            except IOError:
+                lines = ["Welcome to WormNET"]
+        else:
+            lines = ["Welcome to WormNET", "Have fun playing Worms Armageddon!"]
+
+        for line in lines:
+            self.send(f":{IRC_HOST} 372 {self.nickname} :- {line}")
+
+        self.send(f":{IRC_HOST} 376 {self.nickname} :End of /MOTD command.")
+
+    def send_names(self, channame):
+        """send names list for channel"""
+        if channame in irc_channels:
+            users = ' '.join(irc_channels[channame]["users"])
+            self.send(f":{IRC_HOST} 353 {self.nickname} = {channame} :{users}")
+            self.send(f":{IRC_HOST} 366 {self.nickname} {channame} :End of /NAMES list")
+
+    def broadcast_to_channel(self, channame, msg):
+        """broadcast message to channel"""
+        with irc_lock:
+            for client in irc_clients:
+                if client != self and channame in client.channels:
+                    client.send(msg)
+
+    def cleanup(self):
+        """cleanup on disconnect"""
+        with irc_lock:
+            if self in irc_clients:
+                irc_clients.remove(self)
+            for channame in self.channels:
+                if channame in irc_channels:
+                    irc_channels[channame]["users"].discard(self.nickname)
+        try:
+            self.sock.close()
+        except OSError:
+            pass
+
+
+def irc_server():
+    """run irc server"""
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    sock.bind(('0.0.0.0', IRC_PORT))
+    sock.listen(5)
+    print(f"IRC server listening on port {IRC_PORT}")
+
+    while True:
+        try:
+            client_sock, addr = sock.accept()
+            client = IRCClient(client_sock, addr)
+            thread = threading.Thread(target=client.handle, daemon=True)
+            thread.start()
+        except OSError:
+            pass
+
+
+if __name__ == '__main__':
+    # parse CLI arguments
+    parser = argparse.ArgumentParser(description='minimal wormnet server for worms armageddon')
+    parser.add_argument('-c', '--config', default='wormnet.toml', help='path to config file (default: wormnet.toml)')
+    args = parser.parse_args()
+
+    # load config if file exists, otherwise use defaults
+    config_path = Path(args.config)
+    if config_path.exists():
+        load_config(config_path)
+    else:
+        print(f"Config file '{args.config}' not found, using defaults")
+        print(f"  HTTP port: {HTTP_PORT}")
+        print(f"  IRC port: {IRC_PORT}")
+        print(f"  IRC host: {IRC_HOST}")
+        print(f"  Channels: {', '.join(CHANNELS.keys())}")
+        _build_irc_channels()
+
+    # start irc server in background
+    irc_thread = threading.Thread(target=irc_server, daemon=True)
+    irc_thread.start()
+
+    # start http server
+    print(f"\nHTTP server starting on port {HTTP_PORT}")
+    print(f"Configure Worms to connect to: {IRC_HOST}")
+    app.run(host='0.0.0.0', port=HTTP_PORT, threaded=True)

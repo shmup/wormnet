@@ -1,23 +1,25 @@
 # wormnet configuration file
 
 [irc]
-# IRC port to listen on
 port = 6667
 
-# IP address to announce in <CONNECT> tag
-ip = "127.0.0.1"
+# IP address to announce in <CONNECT> tag (leave empty to auto-detect)
+ip = ""
 
-# MOTD file (shown on IRC login)
+# shown on IRC login
 motd_file = "motd.txt"
 
 [http]
 # HTTP port to listen on
 port = 80
 
-# News file (shown in game client)
+# Port to announce in <CONNECT> tag (leave empty for default 6667)
+# Use this if IRC is port-forwarded to a different external port
+# connect_port = 6668
+
+# shown in game client
 news_file = "news.html"
 
-# Channels
 [channels.AnythingGoes]
 scheme = "Pf,Be"
 topic = "Anything goes!"
