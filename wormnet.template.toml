@@ -1,0 +1,29 @@
+# wormnet configuration file
+
+[irc]
+# IRC port to listen on
+port = 6667
+
+# IP address to announce in <CONNECT> tag
+ip = "127.0.0.1"
+
+# MOTD file (shown on IRC login)
+motd_file = "motd.txt"
+
+[http]
+# HTTP port to listen on
+port = 80
+
+# News file (shown in game client)
+news_file = "news.html"
+
+# Channels
+[channels.AnythingGoes]
+scheme = "Pf,Be"
+topic = "Anything goes!"
+icon = 0
+
+[channels.PartyTime]
+scheme = "Pa,Ba"
+topic = "Party time!"
+icon = 0
