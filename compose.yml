@@ -1,0 +1,12 @@
+services:
+  wormnet:
+    build: .
+    ports:
+      - "6667:6667"
+      - "8081:80"
+    volumes:
+      - ./wormnet.toml:/app/wormnet.toml:ro
+      - ./motd.txt:/app/motd.txt:ro
+      - ./news.html:/app/news.html:ro
+      - ./wwwroot:/app/wwwroot:ro
+    restart: unless-stopped
