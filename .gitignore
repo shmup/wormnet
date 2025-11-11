@@ -1,0 +1,8 @@
+# user-specific config (copy from templates)
+motd.txt
+news.html
+wormnet.toml
+
+# python
+__pycache__/
+*.pyc
