@@ -3,6 +3,7 @@ Tests for WormNET IRC protocol compliance
 
 Based on gotchas from what.txt - these are critical for client compatibility
 """
+
 import pytest
 import re
 import time
@@ -38,8 +39,10 @@ def test_join_message_format(irc_client):
 
     # verify format: :nick!~user@host JOIN :#channel
     # pattern: :testplayer!~test@127.0.0.1 JOIN :#heaven
-    pattern = r':testplayer!~test@[\d\.]+ JOIN :#heaven'
-    assert re.match(pattern, join_line), f"JOIN format incorrect: {join_line}\nExpected: :nick!~user@host JOIN :#channel"
+    pattern = r":testplayer!~test@[\d\.]+ JOIN :#heaven"
+    assert re.match(
+        pattern, join_line
+    ), f"JOIN format incorrect: {join_line}\nExpected: :nick!~user@host JOIN :#channel"
 
     # specifically check for colon before channel
     assert "JOIN :#heaven" in join_line, "Missing colon before channel name in JOIN"
@@ -71,7 +74,9 @@ def test_who_shows_actual_channel(irc_client):
     # check that channel is #heaven not *
     for reply in who_replies:
         assert "#heaven" in reply, f"WHO shows wildcard (*) instead of channel: {reply}"
-        assert " * " not in reply or "#heaven" in reply, f"WHO shows * instead of #heaven: {reply}"
+        assert (
+            " * " not in reply or "#heaven" in reply
+        ), f"WHO shows * instead of #heaven: {reply}"
 
 
 def test_who_includes_realname_from_user_command(irc_client):
@@ -126,7 +131,9 @@ def test_channel_topic_format(irc_client):
 
     topic_line = topic_lines[0]
     # topic should contain "00 Test Heaven" (icon + space + text)
-    assert re.search(r'00 Test Heaven', topic_line), f"Topic format incorrect: {topic_line}"
+    assert re.search(
+        r"00 Test Heaven", topic_line
+    ), f"Topic format incorrect: {topic_line}"
 
 
 def test_password_required(irc_client):
@@ -155,6 +162,7 @@ def test_multiple_clients_in_channel(irc_client, irc_server):
 
     # create second client
     from tests.conftest import IRCTestClient
+
     host, port = irc_server
     client2 = IRCTestClient(host, port)
     client2.connect()
@@ -201,8 +209,9 @@ def test_client_flow_sequence(irc_client):
     # verify JOIN format
     join_msg = [l for l in join_lines if "JOIN" in l and "testplayer" in l]
     assert len(join_msg) > 0, "No JOIN message"
-    assert re.search(r':testplayer!~test@[\d\.]+ JOIN :#heaven', join_msg[0]), \
-        f"JOIN format wrong: {join_msg[0]}"
+    assert re.search(
+        r":testplayer!~test@[\d\.]+ JOIN :#heaven", join_msg[0]
+    ), f"JOIN format wrong: {join_msg[0]}"
 
     # WHO
     irc_client.send("WHO #heaven")
@@ -214,7 +223,9 @@ def test_client_flow_sequence(irc_client):
 
     # verify WHO shows channel
     who_text = "\n".join(who_replies)
-    assert "#heaven" in who_text, "WHO doesn't show channel - client won't proceed to GameList"
+    assert (
+        "#heaven" in who_text
+    ), "WHO doesn't show channel - client won't proceed to GameList"
 
 
 def test_nickname_validation(irc_client):
@@ -234,4 +245,6 @@ def test_nickname_validation(irc_client):
     # check for welcome (001) and no errors (432/433)
     all_text = "\n".join(lines)
     assert " 001 " in all_text, f"No welcome message, got: {all_text}"
-    assert "432" not in all_text and "433" not in all_text, f"Valid nickname rejected: {all_text}"
+    assert (
+        "432" not in all_text and "433" not in all_text
+    ), f"Valid nickname rejected: {all_text}"

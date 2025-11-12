@@ -13,9 +13,15 @@ from wormnet import config, http, irc
 def main():
     """entrypoint for wormnet server"""
     # parse CLI arguments
-    parser = argparse.ArgumentParser(description='minimal wormnet server for worms armageddon')
-    parser.add_argument('-c', '--config', default='wormnet.toml',
-                        help='path to config file (default: wormnet.toml)')
+    parser = argparse.ArgumentParser(
+        description="minimal wormnet server for worms armageddon"
+    )
+    parser.add_argument(
+        "-c",
+        "--config",
+        default="wormnet.toml",
+        help="path to config file (default: wormnet.toml)",
+    )
     args = parser.parse_args()
 
     # load config if file exists, otherwise use defaults
@@ -24,9 +30,11 @@ def main():
         config.load_config(config_path)
     else:
         # set up default logging
-        logging.basicConfig(level=logging.INFO,
-                            format='%(asctime)s [%(levelname)s] %(message)s',
-                            datefmt='%Y-%m-%d %H:%M:%S')
+        logging.basicConfig(
+            level=logging.INFO,
+            format="%(asctime)s [%(levelname)s] %(message)s",
+            datefmt="%Y-%m-%d %H:%M:%S",
+        )
         logging.info(f"Config file '{args.config}' not found, using defaults")
         logging.info(f"  HTTP port: {config.HTTP_PORT}")
         logging.info(f"  IRC port: {config.IRC_PORT}")
@@ -41,8 +49,8 @@ def main():
     # start http server
     logging.info(f"HTTP server starting on port {config.HTTP_PORT}")
     logging.info(f"Configure Worms to connect to: {config.IRC_HOST}")
-    http.app.run(host='0.0.0.0', port=config.HTTP_PORT, threaded=True)
+    http.app.run(host="0.0.0.0", port=config.HTTP_PORT, threaded=True)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

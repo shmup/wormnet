@@ -1,4 +1,5 @@
 """pytest fixtures for wormnet tests"""
+
 import socket
 import threading
 import time
@@ -34,7 +35,7 @@ def setup_test_config():
             "scheme": "In,Pr",
             "topic": "Anything goes!",
             "icon": 1,
-        }
+        },
     }
     config.build_irc_channels()
 
@@ -53,7 +54,7 @@ def irc_server(setup_test_config):
     # create socket to get random port
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    sock.bind(('127.0.0.1', 0))
+    sock.bind(("127.0.0.1", 0))
     port = sock.getsockname()[1]
     sock.listen(5)
 
@@ -65,6 +66,7 @@ def irc_server(setup_test_config):
         while True:
             try:
                 from wormnet.irc import IRCClient
+
                 client_sock, addr = sock.accept()
                 client = IRCClient(client_sock, addr)
                 thread = threading.Thread(target=client.handle, daemon=True)
@@ -77,7 +79,7 @@ def irc_server(setup_test_config):
 
     time.sleep(0.1)  # let server start
 
-    yield '127.0.0.1', port
+    yield "127.0.0.1", port
 
     sock.close()
 

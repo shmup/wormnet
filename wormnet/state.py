@@ -1,4 +1,5 @@
 """shared state for wormnet server"""
+
 import threading
 
 # game storage
