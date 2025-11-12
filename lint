@@ -1,0 +1,10 @@
+#!/usr/bin/env -S uv run --script
+# /// script
+# dependencies = ["ruff"]
+# ///
+"""lint code with ruff"""
+import subprocess
+import sys
+
+result = subprocess.run(["ruff", "check", "wormnet", "tests", "wormnet.py"])
+sys.exit(result.returncode)

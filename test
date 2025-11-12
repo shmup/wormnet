@@ -1,0 +1,10 @@
+#!/usr/bin/env -S uv run --script
+# /// script
+# dependencies = ["pytest", "flask", "tomli", "aiohttp"]
+# ///
+"""run tests with pytest"""
+import subprocess
+import sys
+
+result = subprocess.run(["pytest", "tests/", "-v"] + sys.argv[1:])
+sys.exit(result.returncode)
