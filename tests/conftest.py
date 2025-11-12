@@ -139,7 +139,7 @@ class IRCTestClient:
         if self.sock:
             try:
                 self.sock.close()
-            except:
+            except Exception:
                 pass
 
 

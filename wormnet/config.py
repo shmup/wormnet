@@ -2,7 +2,6 @@
 
 import tomli
 import logging
-from pathlib import Path
 from . import state
 
 # defaults

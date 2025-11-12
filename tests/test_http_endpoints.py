@@ -6,7 +6,7 @@ All endpoints are under /wormageddonweb/
 
 import pytest
 from wormnet.http import app
-from wormnet import state, config
+from wormnet import state
 
 
 @pytest.fixture

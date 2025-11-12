@@ -4,9 +4,7 @@ Tests for WormNET IRC protocol compliance
 Based on gotchas from what.txt - these are critical for client compatibility
 """
 
-import pytest
 import re
-import time
 
 
 def test_join_message_format(irc_client):
@@ -68,7 +66,7 @@ def test_who_shows_actual_channel(irc_client):
     lines = irc_client.recv_until("315")  # end of WHO
 
     # find 352 responses (RPL_WHOREPLY)
-    who_replies = [l for l in lines if " 352 " in l]
+    who_replies = [line for line in lines if " 352 " in line]
     assert len(who_replies) > 0, "WHO returned no results - client will hang!"
 
     # check that channel is #heaven not *
@@ -100,7 +98,7 @@ def test_who_includes_realname_from_user_command(irc_client):
     lines = irc_client.recv_until("315")
 
     # find our WHO reply
-    who_replies = [l for l in lines if " 352 " in l and "testplayer" in l]
+    who_replies = [line for line in lines if " 352 " in line and "testplayer" in line]
     assert len(who_replies) > 0, "No WHO reply for our user"
 
     # verify realname is included
@@ -126,7 +124,7 @@ def test_channel_topic_format(irc_client):
     all_text = "\n".join(lines)
 
     # find topic (332 RPL_TOPIC)
-    topic_lines = [l for l in lines if " 332 " in l]
+    topic_lines = [line for line in lines if " 332 " in line]
     assert len(topic_lines) > 0, f"No topic sent for channel. Received:\n{all_text}"
 
     topic_line = topic_lines[0]
@@ -179,7 +177,7 @@ def test_multiple_clients_in_channel(irc_client, irc_server):
     lines = irc_client.recv_until("315")
 
     # should see both players
-    who_replies = [l for l in lines if " 352 " in l]
+    who_replies = [line for line in lines if " 352 " in line]
     assert len(who_replies) >= 2, f"WHO should show both users, got {len(who_replies)}"
 
     who_text = "\n".join(who_replies)
@@ -207,7 +205,7 @@ def test_client_flow_sequence(irc_client):
     join_lines = irc_client.recv_until("366")
 
     # verify JOIN format
-    join_msg = [l for l in join_lines if "JOIN" in l and "testplayer" in l]
+    join_msg = [line for line in join_lines if "JOIN" in line and "testplayer" in line]
     assert len(join_msg) > 0, "No JOIN message"
     assert re.search(
         r":testplayer!~test@[\d\.]+ JOIN :#heaven", join_msg[0]
@@ -218,7 +216,7 @@ def test_client_flow_sequence(irc_client):
     who_lines = irc_client.recv_until("315")
 
     # verify WHO has results
-    who_replies = [l for l in who_lines if " 352 " in l]
+    who_replies = [line for line in who_lines if " 352 " in line]
     assert len(who_replies) > 0, "WHO returned no results - client will hang!"
 
     # verify WHO shows channel

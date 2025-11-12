@@ -2,7 +2,6 @@
 
 from flask import Flask, request, Response, send_from_directory
 import time
-import logging
 from pathlib import Path
 from . import state, config
 

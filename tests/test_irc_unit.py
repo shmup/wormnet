@@ -7,9 +7,9 @@ but runs in milliseconds instead of seconds.
 
 import pytest
 import re
-from unittest.mock import Mock, call
+from unittest.mock import Mock
 from wormnet.irc import IRCClient
-from wormnet import state, config
+from wormnet import state
 
 
 @pytest.fixture
