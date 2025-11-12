@@ -1,5 +1,9 @@
 # wormnet configuration file
 
+[logging]
+# Log level: DEBUG, INFO, WARNING, ERROR, CRITICAL
+level = "INFO"
+
 [irc]
 port = 6667
 
