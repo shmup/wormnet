@@ -119,7 +119,7 @@ def cleanup_games():
 @app.route('/wormageddonweb/Login.asp')
 def login():
     """tell client where irc server is"""
-    # use configured ip or auto-detect from request
+    # use configured IP if set, otherwise fall back to request host
     irc_host = IRC_HOST if IRC_HOST else request.host.split(':')[0]
     port_suffix = f":{CONNECT_PORT}" if CONNECT_PORT else ""
     response = f"<CONNECT {irc_host}{port_suffix}>"
@@ -227,6 +227,7 @@ class IRCClient:
         self.addr = addr
         self.nickname = None
         self.username = None
+        self.realname = None  # stores "flags rank country version"
         self.registered = False
         self.password = None
         self.channels = set()
@@ -234,6 +235,7 @@ class IRCClient:
     def send(self, msg):
         """send message to client"""
         try:
+            print(f"IRC {self.addr[0]}:{self.addr[1]} <- {msg}")
             self.sock.sendall(f"{msg}\r\n".encode('utf-8'))
         except (BrokenPipeError, ConnectionResetError):
             pass
@@ -260,6 +262,7 @@ class IRCClient:
 
     def process_line(self, line):
         """process irc command"""
+        print(f"IRC {self.addr[0]}:{self.addr[1]}: {line}")
         parts = line.split(' ')
         cmd = parts[0].upper()
 
@@ -277,6 +280,10 @@ class IRCClient:
         elif cmd == 'USER':
             if len(parts) >= 4:
                 self.username = parts[1]
+                # extract realname (everything after the colon)
+                # format: USER username hostname servername :flags rank country version
+                if ':' in line:
+                    self.realname = line.split(':', 1)[1]
                 self.check_registration()
 
         elif cmd == 'PING':
@@ -286,10 +293,18 @@ class IRCClient:
             if len(parts) > 1:
                 for channame in parts[1].split(','):
                     if channame.startswith('#') and channame in irc_channels:
+                        # check if already in channel
+                        if channame in self.channels:
+                            continue
                         self.channels.add(channame)
                         with irc_lock:
                             irc_channels[channame]["users"].add(self.nickname)
-                        self.send(f":{self.nickname} JOIN {channame}")
+                        # notify everyone in channel (including self)
+                        # format: :nick!user@host JOIN :#channel
+                        user_mask = f"{self.nickname}!~{self.username}@{self.addr[0]}"
+                        join_msg = f":{user_mask} JOIN :{channame}"
+                        self.send(join_msg)
+                        self.broadcast_to_channel(channame, join_msg)
                         self.send(f":{IRC_HOST} 332 {self.nickname} {channame} :{irc_channels[channame]['topic']}")
                         self.send_names(channame)
 
@@ -297,10 +312,13 @@ class IRCClient:
             if len(parts) > 1:
                 channame = parts[1]
                 if channame in self.channels:
+                    # notify everyone before removing from channel
+                    part_msg = f":{self.nickname} PART {channame}"
+                    self.send(part_msg)
+                    self.broadcast_to_channel(channame, part_msg)
                     self.channels.remove(channame)
                     with irc_lock:
                         irc_channels[channame]["users"].discard(self.nickname)
-                    self.send(f":{self.nickname} PART {channame}")
 
         elif cmd == 'PRIVMSG' and self.registered:
             if len(parts) >= 3:
@@ -321,7 +339,27 @@ class IRCClient:
                 self.send_names(parts[1])
 
         elif cmd == 'WHO' and self.registered:
-            self.send(f":{IRC_HOST} 315 {self.nickname} * :End of /WHO list")
+            # WHO [channel]
+            target = parts[1].strip() if len(parts) > 1 and parts[1].strip() else '*'
+            with irc_lock:
+                if target.startswith('#') and target in irc_channels:
+                    # list users in specific channel - need to find client objects
+                    for client in irc_clients:
+                        if client.nickname in irc_channels[target]["users"]:
+                            realname = client.realname if client.realname else client.nickname
+                            username = client.username if client.username else "user"
+                            self.send(f":{IRC_HOST} 352 {self.nickname} {target} ~{username} {client.addr[0]} {IRC_HOST} {client.nickname} H :0 {realname}")
+                else:
+                    # list all users, showing which channel they're in
+                    for client in irc_clients:
+                        if client.nickname:
+                            realname = client.realname if client.realname else client.nickname
+                            username = client.username if client.username else "user"
+                            # show first channel user is in, or * if none
+                            channel = next(iter(client.channels)) if client.channels else '*'
+                            self.send(f":{IRC_HOST} 352 {self.nickname} {channel} ~{username} {client.addr[0]} {IRC_HOST} {client.nickname} H :0 {realname}")
+                    target = '*'  # normalize for reply
+            self.send(f":{IRC_HOST} 315 {self.nickname} {target} :End of /WHO list")
 
         elif cmd == 'MODE' and self.registered:
             if len(parts) > 1:
@@ -345,6 +383,13 @@ class IRCClient:
             self.registered = True
             with irc_lock:
                 irc_clients.append(self)
+
+            # send welcome messages
+            self.send(f":{IRC_HOST} 001 {self.nickname} :Welcome {self.nickname}")
+            self.send(f":{IRC_HOST} 002 {self.nickname} :Your host is {IRC_HOST}")
+            self.send(f":{IRC_HOST} 003 {self.nickname} :This server was created today")
+            self.send(f":{IRC_HOST} 004 {self.nickname} {IRC_HOST} WormNET 0 0 0")
+            self.send(f":{IRC_HOST} 005 {self.nickname} CHANTYPES=# :are supported by this server")
 
             self.send_motd()
 
@@ -382,6 +427,15 @@ class IRCClient:
 
     def cleanup(self):
         """cleanup on disconnect"""
+        # notify all channels user was in
+        if self.nickname:
+            quit_msg = f":{self.nickname} QUIT :Client disconnected"
+            for channame in self.channels:
+                self.broadcast_to_channel(channame, quit_msg)
+            print(f"IRC: {self.addr[0]}:{self.addr[1]} disconnecting: Quit")
+        else:
+            print(f"IRC: {self.addr[0]}:{self.addr[1]} disconnected before registering")
+
         with irc_lock:
             if self in irc_clients:
                 irc_clients.remove(self)
@@ -405,6 +459,7 @@ def irc_server():
     while True:
         try:
             client_sock, addr = sock.accept()
+            print(f"New IRC connection from {addr[0]}:{addr[1]}")
             client = IRCClient(client_sock, addr)
             thread = threading.Thread(target=client.handle, daemon=True)
             thread.start()
