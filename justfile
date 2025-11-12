@@ -8,9 +8,16 @@ format:
 lint:
     ./lint
 
-# run tests
+# run tests (fast unit tests only)
 test *ARGS:
     ./test {{ARGS}}
+
+# run integration tests (slower, uses real sockets)
+test-integration:
+    pytest tests/test_irc_integration.py -v
+
+# run all tests (unit + integration)
+test-all: test test-integration
 
 # run all checks (format, lint, test)
 check: format lint test

@@ -2,9 +2,11 @@
 # /// script
 # dependencies = ["pytest", "flask", "tomli", "aiohttp"]
 # ///
-"""run tests with pytest"""
+"""run tests with pytest (excludes slow integration tests by default)"""
 import subprocess
 import sys
 
-result = subprocess.run(["pytest", "tests/", "-v"] + sys.argv[1:])
+# Exclude integration tests unless explicitly specified
+args = ["pytest", "tests/", "-v", "--ignore=tests/test_irc_integration.py"] + sys.argv[1:]
+result = subprocess.run(args)
 sys.exit(result.returncode)
