@@ -2,26 +2,22 @@
 
 # format code with black
 format:
-    ./format
+    uv run --with black black wormnet tests wormnet.py
 
 # lint code with ruff
 lint:
-    ./lint
+    uv run --with ruff ruff check wormnet tests wormnet.py
 
 # run tests (fast unit tests only)
 test *ARGS:
-    ./test {{ARGS}}
+    uv run --with pytest --with flask --with tomli pytest tests/ -v --ignore=tests/test_irc_integration.py {{ARGS}}
 
 # run integration tests (slower, uses real sockets)
 test-integration:
-    pytest tests/test_irc_integration.py -v
+    uv run --with pytest --with flask --with tomli pytest tests/test_irc_integration.py -v
 
 # run all tests (unit + integration)
 test-all: test test-integration
 
 # run all checks (format, lint, test)
 check: format lint test
-
-# run tests for a specific file
-test-file FILE:
-    ./test {{FILE}}
