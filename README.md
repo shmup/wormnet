@@ -1,12 +1,12 @@
 ## wormnet
 
-minimal worms armageddon server - irc + http in one script
+minimal worms armageddon server - irc + http
 
 ### quick start
 
 ```bash
-./wormnet                 # run with defaults
-./wormnet -c wormnet.toml # or with custom config
+./wormnet.py                 # run with defaults
+./wormnet.py -c wormnet.toml # or with custom config
 ```
 
 ### setup
