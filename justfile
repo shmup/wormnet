@@ -10,11 +10,11 @@ lint:
 
 # run tests (fast unit tests only)
 test *ARGS:
-    uv run --with pytest --with flask --with tomli pytest tests/ -v --ignore=tests/test_irc_integration.py {{ARGS}}
+    uv run --with pytest --with flask --with tomli --with requests pytest tests/ -v --ignore=tests/test_irc_integration.py {{ARGS}}
 
 # run integration tests (slower, uses real sockets)
 test-integration:
-    uv run --with pytest --with flask --with tomli pytest tests/test_irc_integration.py -v
+    uv run --with pytest --with flask --with tomli --with requests pytest tests/test_irc_integration.py -v
 
 # run all tests (unit + integration)
 test-all: test test-integration

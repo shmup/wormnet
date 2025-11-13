@@ -1,0 +1,749 @@
+Commands
+
+    All commands are prefixed with !.
+    Use help <command> to get details on a command.
+    Parameters in <angular brackets> are required, those in [square brackets] are optional. | means "or" - A|B means "A or B".
+    Commands sent by the game owner are not visible to other players.
+
+#AnythingGoes
+
+To send HostingBuddy a command in #AnythingGoes, type either /msg HostingBuddy command (preferred) or !command. Users of W:A 3.6.30.0 and newer can also use /hb command.
+
+help [command]
+    Displays a list of commands, or details for a specific command
+
+host <scheme>
+    Hosts a new game with the specified scheme
+
+phost <scheme>
+    Hosts a new private game with the specified scheme
+
+host|phost [scheme] "<gamename>"
+    Hosts a game with the specified name. Will appear as "YourName's gamename". Scheme defaults to Intermediate.
+
+close
+    Closes your game.
+
+schemes
+    Displays a list of default schemes
+
+Lobby
+General commands
+
+help [command]
+    Displays a list of commands and a short usage summary, or details for a specific command.
+
+about
+    shows information about HostingBuddy and its authors.
+
+start
+    Starts the game when all players have lit up. If they have not all lit up yet, the game will start automatically when they are.
+    Use !stop or turn your own light off to cancel automatic start.
+
+stop
+    If HostingBuddy is lit up, the game will start automatically - this will turn HostingBuddy's light off.
+
+close
+    Closes the game - no more players will be able to join.
+
+reopen
+    Reopens the game - allows more players to join.
+    (alias: open)
+
+again
+    Abandons the currently played match in case of a multi-round game, allowing to start a new one.
+
+kick <player name>
+    Remove the specified player from the game.
+    (alias: boot)
+
+version <name>
+    Sets the Extended Scheme Options to emulate the test versions previously available. These versions were: batty, fast, test, racing, boom. Deprecated in favour of setting the scheme options manually.
+    Valid game versions are:
+
+        Normal
+        Batty
+        Fast (1.5x speed)
+        Test
+        RacingStuff (Shortcuts: "racing", "rs")
+        BoomRacingStuff (Shortcuts: "boomracing", "boom", "brs")
+
+Team commands
+
+worms [team number] <worm count>
+    Sets the number of worms.
+    If a team number is not specified, the count is set for all teams.
+
+colour <team number> <colour>
+    Sets a team's ally colour (you only need to specify the first letter).
+    Valid colours are:
+
+        Red
+        Blue
+        Green
+        Yellow
+        Magenta (aliases: Pink)
+        Cyan
+
+    (alias: color)
+
+handicap [team number] +|x|-
+    Sets a team's energy handicap.
+    If a team number is not specified, the handicap is set for all teams.
+
+remove <team number>
+    Removes a team.
+    If a player is being disruptive it will probably be easier to !kick them.
+
+Map/scheme commands
+
+map [texture]
+    Selects a random map for the current scheme (usually from WMDB), or generates a random landscape.
+    texture is the texture for generated maps (e.g. "Fruit" or "Cheese").
+
+level <name>
+    Selects a standard intrinsic level as the map to play on.
+
+bigmap
+    Selects a random big colour map for the current scheme from WMDB.
+
+size [normal|big|auto]
+    Sets size of maps to request from WMDB.
+    (alias: mapsize)
+
+type [cavern|island|auto]
+    Selects whether or not the next PNG map will be an island or a cavern.
+
+        cavern (map will always be set to cavern)
+        island (map will always be set to island)
+        auto (map type will be read from file; defaults to island)
+
+style [island|two islands|low island|joined islands|cavern|twin tunnel|lake cavern|tunnel]
+    Sets the style for the next generated random map.
+
+border [yes|no|auto]
+    Selects whether or not the next PNG map will have a border or not.
+
+        yes (map will always have a border)
+        no (map will never have a border)
+        auto (border setting will be read from file; defaults to no border)
+
+water [drop|0-100|auto]
+    Selects what the next map's initial water level will be.
+
+        drop (initial water level will enable water drops)
+        0-100 (initial water level will be a certain percentage of the map's height)
+        auto (initial water level will be read from file; defaults to lowest possible)
+
+objects [0-100|auto]
+    Selects the object density for the next generated random map.
+
+bridges [0-100|auto]
+    Selects the bridge density for the next generated random map.
+
+holes [0-255|auto]
+    Selects the number of worm placement holes for the next PNG map loaded.
+
+seed <land|objects|holes> [<seed|random|default>]
+    Selects another seed (random if unspecified) for the map.
+
+reload
+    Reloads the current map and reapplies settings.
+
+wmdb <map number>
+    Downloads and sends a map from WMDB.
+    You must specify the map number (from the URL).
+
+wmdbscheme [map number]
+    Loads the scheme file attached to the last loaded or specified WMDB map.
+
+wsdb <scheme number>
+    Downloads and uses a scheme from WSDB.
+    You must specify the scheme number (from the URL).
+wsdb save
+    Saves the current scheme to WSDB.
+
+tusmap <map number>
+    Downloads and sends a map from tus-wa.com.
+    You must specify the map number (from the URL).
+
+tusscheme <scheme number>
+    Downloads and uses a scheme from tus-wa.com.
+    You must specify the scheme number (from the URL).
+
+schemes
+    Displays available schemes.
+
+scheme <scheme name>
+    Loads a different game scheme.
+    (alias: load)
+
+reset
+    Resets the game scheme.
+
+mapgen [option=value [...]]
+    Generates a map using MapGEN.
+
+Game options
+
+energy <number>
+    Sets worms' initial energy level.
+    (aliases: en, life, health, hp)
+
+rounds <number>
+    Sets the number of victories required to win the match.
+    (alias: ro)
+
+wormselect [on|off]
+    Toggles worm select.
+    (aliases: ws, select, sel)
+
+teleport [on|off]
+    Toggles initial teleport.
+    (aliases: tp, tele)
+
+artillery [on|off]
+    Toggles artillery (anchored) mode.
+    (aliases: an, anchor)
+
+stockpiling on|off|anti
+    Sets stockpiling options:
+
+        On (new ammo on each round)
+        Off (restock ammo on each round)
+        Anti (one set of ammo for the whole game)
+
+    (alias: sp)
+
+donorcards [on|off]
+    Toggles donor cards.
+    (aliases: dc, donor)
+
+falldamage [on|off|<value>]
+    Toggles fall damage.
+    (alias: fd)
+
+Time options
+
+turntime <seconds>
+    Sets the turn time.
+    Use inf[inite] for infinite turn time.
+    (aliases: tt, turn)
+
+roundtime <minutes>
+    Sets the round time in minutes.
+    (aliases: rt, round)
+
+roundtime <seconds>s
+    Sets the round time in seconds.
+    (aliases: rt, round)
+
+weaponretreat <seconds>
+    Sets the weapon retreat time in seconds.
+    (alias: wr)
+
+roperetreat <seconds>
+    Sets the rope retreat time in seconds.
+    (alias: rr)
+
+turndelay <seconds>
+    Sets the hotseat delay time in seconds.
+    (aliases: td, hotseatdelay, hotseat, hd)
+
+showtime [on|off]
+    Toggles round time display.
+    (alias: st)
+
+Crate options
+
+weaponcrates <percentage>
+    Sets chance of weapon crates.
+    (aliases: wc, weaponcrate)
+
+utilitycrates <percentage>
+    Sets chance of utility crates.
+    (aliases: uc, utilitycrate)
+
+healthcrates <percentage>
+    Sets chance of health crates.
+    (aliases: hc, healthcrate, firstaidcrates, firstaidcrate)
+
+nocrates <percentage>
+    Sets chance of no crate falling, or 255 to use the default. (Added in v3.8)
+    (aliases: nocrate, nc)
+
+crateenergy <number>
+    Sets health gained from health crates.
+    (aliases: ce, firstaid, fa)
+
+Object options
+
+Each of the first three options overrides each other, i.e. you can choose mines/drums/both (use 0 of either for no objects).
+
+hazards <number>
+    Sets number of mines/oil drums on terrain.
+    (alias: ha)
+
+drums <number>
+    Sets number of oil drums on terrain.
+    (aliases: oildrums, od)
+
+mines <number>
+    Sets number of mines on terrain.
+    (alias: mi)
+
+dud [on|off]
+    Toggles dud mines.
+
+fuse <seconds>
+    Sets mine fuse time.
+    Use ? for random.
+    (aliases: minefuse, mf)
+
+Sudden death options
+
+suddendeath end|nuke|classic|none
+    Sets sudden death mode:
+
+        end (end game)
+        nuke (nuclear strike)
+        classic (classic (1 HP) mode)
+        none (no action (no energy lost))
+
+    (alias: sd)
+
+waterrise none|slow|medium|fast
+    Sets sudden death water rise speed (you can also use 0 to 7).
+    (alias: rise)
+
+General options
+
+replay [on|off]
+    Toggles automatic replays.
+
+blood [on|off]
+    Toggles blood mode.
+    (alias: bl)
+
+godmode [on|off]
+    Toggles god mode (invincible worms).
+    (aliases: gm, invworms, iw)
+
+indland [on|off]
+    Toggles indestructible land.
+    (alias: il)
+
+Weapon options
+
+teamweapons [on|off]
+    Toggles team special weapons.
+    (aliases: tw, playerweapons, pw)
+
+superweapons [on|off]
+    Toggles super weapons.
+    (aliases: sw, super)
+
+aquasheep [on|off]
+    Toggles Aqua Sheep.
+    (aliases: as, aqua)
+
+sheepheaven [on|off]
+    Toggles Sheep Heaven.
+    (aliases: sh, sheep)
+
+goldgrenade [on|off]
+    Toggles golden grenades.
+    (alias: gg)
+
+goldshotgun [on|off]
+    Toggles golden shotgun.
+    (alias: gs)
+
+goldbanana [on|off]
+    Toggles golden bananas.
+    (alias: gb)
+
+goldlongbow [on|off]
+    Toggles golden longbows.
+    (aliases: gl, goldbow)
+
+Weapon configuration
+
+HostingBuddy finds weapons by comparing what you enter to the start of the weapon name, if it finds no matches then it removes the first word of each weapon and tries again. You will need to specify more of the full weapon name if multiple weapons start with the same name, e.g. Mine since Mine Strike exists.
+
+    Examples:
+
+        Bazooka
+        Ninja Rope
+        Girder Starter-Pack
+        Patsy's Magic Bullet
+
+
+ammo <weapon name> <amount>
+    Sets weapon ammo.
+    Use inf[inite] for infinite ammo.
+    (alias: am)
+
+power <weapon name> <level>
+    Sets weapon power.
+    (alias: po)
+
+delay <weapon name> <turns>
+    Sets weapon turn delay.
+    (alias: de)
+
+crate <weapon name> <number>
+    Sets weapon crate probability.
+    (aliases: cr, crates)
+
+Extended physics options
+
+constantwind [on|off]
+    Toggles constant wind.
+    (aliases: cwind, cw)
+
+wind <number>
+    Sets percentage wind.
+    (alias: wi)
+
+windbias <number>
+    Sets bias for right worms getting left wind (and v/v).
+    (aliases: windb, wb)
+
+gravity <number>
+    Sets acceleration due to gravity.
+    (aliases: grav, gr)
+
+terrainfriction <number>
+    Sets proportion of velocity retained during collisions with terrain.
+    (aliases: friction, tf, fr)
+
+ropeknocking <number>
+    Sets strength of rope knocking in %, or 255 for channel value.
+    (aliases: knocking, knock, rk)
+
+phasedwormsallied [off|worms|worms+weapons|worms+weapons+damage]
+    Sets the things that allied worms aren't affected by.
+    (aliases: phasedallied, pwa, pa)
+
+phasedwormsenemy [off|worms|worms+weapons|worms+weapons+damage]
+    Sets the things that enemy worms aren't affected by.
+    (aliases: phasedenemy, pwe, pe)
+
+explosionspushallobjects [on|off|default]
+    Sets whether explosions will push all objects or not.
+    (aliases: explosionspushobjects, objectspushedbyexplosions, epao, ope)
+
+pneumaticdrillimpartsvelocity [on|off|default]
+    Sets whether hitting a worm with a pneumatic drill causes it to more proportionally to the drilling worm's velocity.
+    (aliases: drillimpartsvelocity, pdiv, div)
+
+petrolturndecay <number>
+    Sets the rate per turn at which petrol bomb flames shrink.
+    (aliases: pturndecay, pd)
+
+petroltouchdecay <number>
+    Sets the rate at which petrol bomb flames shrink when touched by worms.
+    (aliases: ptouchdecay, ptd)
+
+maximumflameletcount <number>
+    Sets the maximum number of flamelets on the map.
+    (aliases: maxflameletcount, maximumflamelets, maxflamelets, flames, mfc)
+
+maximumprojectilespeed <number>
+    Sets the maximum velocity at which a projectile can move.
+    (aliases: maxprojectilespeed, maxprojspeed, projectilespeed, projspeed, mps)
+
+maximumropespeed <number>
+    Sets the maximum speed at which roping worms can move.
+    (aliases: maxropespeed, ropespeed, speed, mrs)
+
+maximumjetpackspeed <number>
+    Sets the maximum speed at which a jetpacking worm can move.
+    (aliases: maxjetpackspeed, maxjpspeed, jetpackspeed, jpspeed, mjps, mjs)
+
+Extended gameplay options
+
+unrestrictrope [on|off]
+    Removes some rope restrictions to make it more similar to the rope found in Worms 2.
+    (aliases: improvedrope, rope+, ur, ir)
+
+maximumcratecountonmapatonce <number>
+    Sets the maximum number of crates on the map at once.
+    (aliases: maximumcratecountonmap, maxcratecountonmap, maximumcratecount, maxcratecount, maximumcrates, cratelimit, maxcrates, mccomao, mccom, mc)
+
+suddendeathdisableswormselect [on|off]
+    Toggles whether sudden death enables worm select.
+    (aliases: sddisablesws, sddws)
+
+suddendeathwormdamageperturn <number>
+    Sets the health each worm loses per turn if Sudden Death is set to nuke.
+    (aliases: sdwormdamageperturn, suddendeathdamageperturn, sddamageperturn, suddendeathdamage, sddamage, sdwdpt, sddpt, sdd)
+
+battyrope [on|off]
+    Toggles whether worms stay on ropes/jet pack at the end of their turns.
+    (aliases: battyropes, batty, br)
+
+roperolldrops [disabled|ropeonly|ropeorjump]
+    Sets which weapons, if any, can be used during a rope roll.
+    (aliases: ropedrops, rrd)
+
+ximpactlossofcontrol [on|off]
+    Toggles whether a high velocity horizontal collision causes loss of control.
+    (aliases: ximpactloss, xiloc, xil)
+
+keepcontrolafterbumpinghead [on|off]
+    Toggles whether a worm keeps control after an upwards vertical collision on the rope.
+    (alias: kcabh)
+
+keepcontrolafterskimming [losecontrol|keepcontrol|keepcontrolandrope]
+    Sets what happens to the control and roping state after a worm skims.
+    (alias: kcas)
+
+falldamageistriggeredbyexplosions [on|off]
+    Toggles whether a worm incurs fall damage immediately after being pushed by an explosion.
+    (aliases: falldamagetriggeredbyexplosions, explosionstriggerfalldamage, fdistriggeredbyexplosions, fdtriggeredbyexplosions, explosionstriggerfd, fditbe, fdtbe, etfd)
+
+undeterminedcrates [on|off|default]
+    Sets whether the contents of weapon/utility crates are determined on collection rather than on drop.
+    (aliases: undetcrates, udc)
+
+undeterminedfuses [on|off|default]
+    Sets whether mine fuses are determined on trigger rather than on creation.
+    (aliases: undetfuses, udf)
+
+pausetimerwhilefiring [on|off]
+    Sets whether the turn timer is paused whilst a worm is firing its weapon.
+    (aliases: firingpausestimer, pause, ptwf, fpt)
+
+lossofcontroldoesntendturn [on|off]
+    Sets whether events that cause loss of control will cause the turn to end.
+    (aliases: lossdoesntendturn, stoicworm, locdet, lcdet, ldet)
+
+weaponusedoesntendturn [on|off]
+    Allows multiple weapons to be used in a single turn.
+    (aliases: weaponsdontendturn, shotdoesntendturn, multishot, wudet, wdet, sdet)
+
+wudetdoesntblockanyweapons [on|off]
+    Prevents "Weapon use doesn't end turn" from blocking Earth Quake, Armageddon, and Indian Nuclear Test.
+    (aliases: wudetdoesntblockanyweapons, wudetdoesntblockweapons, wdetdoesntblockanyweapons, wdetdoesntblockweapons, sdetdoesntblockanyweapons, sdetdoesntblockweapons, unlockwudetweapons, unlockwdetweapons, unlocksdetweapons, etaodbaw, wdbaw, sdbaw, uww, usw)
+
+gameenginespeed <number>
+    Changes the speed at which physics and sound effects occur.
+    (aliases: enginespeed, gamespeed, ges)
+
+fractionalroundtimer [on|off]
+    Sets whether the round timer will count down fractions of a second rather than just whole seconds.
+    (aliases: fracroundtimer, fractionaltimer, fractimer, frt)
+
+automaticendofturnretreat [on|off]
+    Sets whether retreat time is triggered when turn time expires.
+    (aliases: autoendofturnretreat, autoendturnretreat, automaticretreat, autoretreat, aeotr)
+
+healthcratescurepoison [dontcure|collectingworm|allwormsinteam|allalliedworms]
+    Sets which poisoned worms health crates cure upon collection.
+    (aliases: healthcurespoison, hccp)
+
+sheepheavensgate [explode|fuse|odds|explode+fuse|explode+odds|fuse+odds|explode+fuse+odds]
+    Sets which options the "Sheep Heaven" option enables.
+    (alias: shg)
+
+conserveinstantutilities [on|off]
+    Causes instant utilities to be consumed one at a time rather than all at once.
+    (aliases: conserveutilities, conserveutils, ciu)
+
+expediteinstantutilities [on|off]
+    Causes instant utilities to be consumed immediately in situations when they would normally be saved.
+    (aliases: expediteutilities, expediteutils, eiu)
+
+doubletimestacklimit <number>
+    The number of times a double turn time utility can be activated in a given turn.
+    (aliases: doubleturntimestacklimit, dtstacklimit, dtsl)
+
+Extended glitch emulation options
+
+indianropeglitch [on|off|default]
+    Allows the rope to be fired straight down if selected while the worm is moving.
+    (aliases: indianropetrick, indianrope, irg)
+
+herddoublingglitch [on|off|default]
+    Allows jumping at the right moment to release more Mad Cows than usual.
+    (aliases: herddoubling, hdg)
+
+jetpackbungeeglitch [on|off]
+    Allows activating the Bungee from a Jet Pack.
+    (aliases: jpbungeeglitch, jpbg)
+
+anglecheatglitch [on|off]
+    Allows the Longbow and Baseball Bat to be fired at unusual angles by selecting them while moving.
+    (aliases: anglecheat, acg)
+
+glideglitch [on|off]
+    Toggles the glide glitch, where some collisions can cause a worm to continue moving rather than landing.
+    (aliases: glide, glg)
+
+skipwalking [disabled|possible|facilitated]
+    Whether skipwalking is disallowed, allowed, or made possible during retreat time respectively.
+    (alias: skw)
+
+blockroofing [allow|above|everywhere]
+    Whether roofing is allowed, or how it is blocked.
+    (aliases: roofing, roof)
+
+floatingweaponglitch [on|off]
+    Whether it's possible to drop detonation-on-impact weapons in a way that causes them to float and not detonate immediately.
+    (aliases: floatingweapons, floatingweapon, fwg)
+
+terrainoverlapphasingglitch [on|off]
+    Whether objects will move freely if they intersect with land.
+    (aliases: terrainoverlapphasing, topg)
+
+Extended input options
+
+autoplacewormsbyally [on|off]
+    Sets whether automatic worm placement attempts to group worms by allied colour.
+    (aliases: placewormsbyally, autoplacebyally, apwba)
+
+circularaim [on|off]
+    Sets whether holding up and down doesn't cause aiming to stop at the top and bottom.
+    (aliases: circaim, cira, ca)
+
+antilockaim [on|off]
+    Sets whether aim is reset to a random value between turns to prevent easy repeat shots.
+    (aliases: reaim, ala)
+
+antilockpower [on|off]
+    Sets whether holding space does not fire the weapon at full power, but instead power starts decreasing.
+    (alias: alp)
+
+wormselectiondoesntendhotseat [on|off]
+    Sets whether worm selection allows hotseat time to continue.
+    (aliases: wormselectdoesntendhotseat, wsdoesntendhs, wsdehs)
+
+wormselectionisnevercancelled [on|off]
+    Sets whether worm selection is allowed throughout the turn, even after moving.
+    (aliases: wormselectisnevercancelled, wsisnevercancelled, selectwormanytime, wsinc, swat)
+
+girderradiusassist [on|off]
+    Sets whether the game prevents you moving your mouse too far away to place girders.
+    (alias: gra)
+
+Extended visual options
+
+bloodlevel <number>
+    Sets the amount of blood in %, or 255 to use the channel default.
+    (alias: bll)
+
+Extended RubberWorm options
+
+rubberwormbounciness <number>
+    Sets the coefficient of restitution of worm bounciness.
+    (aliases: rwbounciness, rubber, rwb)
+
+rubberwormairviscosity <number>
+    Sets the air resistance for objects such as projectiles.
+    (aliases: rwairviscosity, rwviscosity, visc, rwav)
+
+rubberwormairviscosityappliestoworms [on|off]
+    Sets whether air viscosity applies to worms too.
+    (aliases: rwairviscosityappliestoworms, rwviscosityappliestoworms, viscappliestoworms, rwavatw)
+
+rubberwormwind <number>
+    Sets the level of influence the wind has over objects that aren't normally pushed by wind.
+    (aliases: rwwindinfluence, rwwind, rwwi, rww)
+
+rubberwormwindinfluenceappliestoworms [on|off]
+    Sets whether wind influence applies to worms too.
+    (aliases: rwwindinfluenceappliestoworms, rwwindappliestoworms, rwwiatw, rwwatw)
+
+rubberwormgravitytype [unmodified|standard|blackholeconstant|blackholelinear]
+    Sets the RubberWorm gravity type.
+    (aliases: rwgravitytype, rwgravtype, rwgt)
+
+rubberwormgravitystrength <number>
+    Sets the extent to which objects will be affected by RubberWorm gravity.
+    (aliases: rwgravitystrength, rwgravstrength, rwgs)
+
+rubberwormcraterate <number>
+    Sets the number of crates which appear at once.
+    (aliases: rwcraterate, rwcr, craterate)
+
+rubberwormcrateshower [on|off]
+    Toggles constant crate shower.
+    (aliases: rwcrateshower, rwcs, crateshower)
+
+rubberwormantisink [on|off]
+    Toggles anti-sink (puts worms back on land if they touch water).
+    (aliases: rwantisink, rwas, antisink)
+
+rubberwormrememberweapons [on|off]
+    Causes all weapons to continue to be equipped by a worm after firing.
+    (aliases: rwrememberweapons, rwrw, weaponsdontchangeautomatically, wdca)
+
+rubberwormextendedfusesherds [on|off]
+    Allows fuses/herds from 1-10 seconds.
+    (aliases: rwextendedfusesherds, rwextendedfuses, rwefh, rwef, fuseex)
+
+rubberwormantilockaim [on|off]
+    Resets the aim angle to 0 degrees after each shot.
+    (aliases: rwantilockaim, rwala)
+
+rubberwormkaosmod <number>
+    Sets utility crate probabilities identified by the selected Kaos Mod number.
+    (aliases: rwkaosmod, kaosmod, rwkm, kaos)
+
+
+Schemes as of: 2023-03-05
+
+Abnormal.wsc
+Aerial Classic.wsc
+Aerial SD.wsc
+Battle race.wsc
+Big BnA.wsc
+Big Rope Race.wsc
+BnA.wsc
+BnG.wsc
+Boom Race.wsc
+Bungee Race.wsc
+Bungee Shopper.wsc
+Burning Girders.wsc
+Capture the Flag.wsc
+Dabble and Fidget.wsc
+Darts.wsc
+Elite.wsc
+Fort.wsc
+Free Warmer.wsc
+Ghost Knocking.wsc
+Golf.wsc
+Holy War.wsc
+Hysteria.wsc
+Jetpack Race.wsc
+Kaos Mole Shopper.wsc
+Kaos Normal.wsc
+Kaos Pro.wsc
+Mine Madness.wsc
+Mole Shopper.wsc
+Neocombat.wsc
+Only Crates.wsc
+Parachute Race.wsc
+Plop War.wsc
+Power Prodder.wsc
+Rope Race.wsc
+Roper.wsc
+Rowy.wsc
+Rubber BnG.wsc
+Rubber Plop War.wsc
+Sheep Fort.wsc
+Shopper.wsc
+Solid testing.wsc
+Super Sheep Race.wsc
+Supersheeper.wsc
+Surf Shopper.wsc
+TTRR.wsc
+Team17.wsc
+Testing.wsc
+Tower Rope Race.wsc
+Tube Trap.wsc
+Walk for Weapons.wsc
+Warmer.wsc
+Wascar.wsc
