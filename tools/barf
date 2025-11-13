@@ -1,0 +1,66 @@
+#!/usr/bin/env python3
+"""join #hell and print names"""
+
+import socket
+import sys
+
+HOST = "localhost"
+PORT = 6667
+NICK = "barf"
+
+sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+sock.settimeout(2.0)
+
+try:
+    sock.connect((HOST, PORT))
+except ConnectionRefusedError:
+    print(f"error: could not connect to {HOST}:{PORT} (is wormnet running?)", file=sys.stderr)
+    sys.exit(1)
+except OSError as e:
+    print(f"error: connection failed: {e}", file=sys.stderr)
+    sys.exit(1)
+
+
+def send(msg):
+    print(f"> {msg}")
+    sock.sendall(f"{msg}\r\n".encode("utf-8"))
+
+
+def recv_until(marker):
+    """receive lines until we see the marker"""
+    buf = ""
+    while True:
+        try:
+            data = sock.recv(4096).decode("utf-8", errors="ignore")
+            if not data:
+                break
+            buf += data
+            while "\n" in buf:
+                line, buf = buf.split("\n", 1)
+                line = line.rstrip("\r")
+                if line:
+                    print(f"< {line}")
+                    # respond to PING
+                    if line.startswith("PING"):
+                        send(f"PONG {HOST}")
+                    # check for marker
+                    if marker in line:
+                        return
+        except socket.timeout:
+            break
+
+
+# connect
+send("PASS ELSILRACLIHP")
+send("NICK barf")
+send("USER barf localhost localhost :barf bot")
+
+# wait for MOTD end (376)
+recv_until("376")
+
+# join channel
+send("JOIN #hell")
+# wait for end of NAMES (366)
+recv_until("366")
+
+sock.close()
