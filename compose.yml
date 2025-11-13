@@ -4,6 +4,7 @@ services:
     ports:
       - "6667:6667"
       - "8081:80"
+    network_mode: "host"
     volumes:
       - ./wormnet.toml:/app/wormnet.toml:ro
       - ./motd.txt:/app/motd.txt:ro
