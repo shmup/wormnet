@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""HostingBuddy - IRC bot for creating Worms Armageddon game lobbies"""
+"""buddy - IRC bot for creating Worms Armageddon game lobbies"""
 
 import re
 import socket
@@ -16,8 +16,10 @@ def connect_irc(host='localhost', port=6667):
     sock = socket.socket()
     sock.connect((host, port))
     send_line(sock, 'PASS ELSILRACLIHP')
-    send_line(sock, 'NICK HostingBuddy')
-    send_line(sock, 'USER hostingbuddy host server :Game hosting bot')
+    send_line(sock, 'NICK buddy')
+    # USER <username>   <hostname> <servername> :<flags> <rank> <country> <version>
+    # USER buddy        host       server       :48      0      US        3.8.1
+    send_line(sock, 'USER buddy host server :51 11 ZZ 3.8.1')
     return sock
 
 
@@ -181,7 +183,7 @@ def run_bot(host='localhost', port=6667, channels=None):
     state = GameState()
     buffer = ''
 
-    print("HostingBuddy ready!")
+    print("buddy ready!")
 
     try:
         while True:
