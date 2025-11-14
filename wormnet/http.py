@@ -1,6 +1,6 @@
 """http server for wormnet (game lobby management)"""
 
-from flask import Flask, request, Response, send_from_directory
+from flask import Flask, request, send_from_directory
 import time
 from pathlib import Path
 from . import state, config
@@ -55,6 +55,9 @@ def game():
     cleanup_games()
 
     if cmd == "Create":
+        import logging
+
+        logging.debug(f"Game.asp Create params: {dict(request.args)}")
         with state.games_lock:
             state.game_counter += 1
             state.games[state.game_counter] = {
@@ -66,11 +69,10 @@ def game():
                 "channel": request.args.get("Chan", ""),
                 "location": request.args.get("Loc", ""),
                 "type": request.args.get("Type", "0"),
+                "scheme": request.args.get("Scheme", ""),
                 "created": time.time(),
             }
-            resp = Response("<NOTHING>")
-            resp.headers["SetGameId"] = f": {state.game_counter}"
-            return resp
+            return f"SetGameId: {state.game_counter}"
 
     elif cmd == "Close":
         gid = int(request.args.get("GameID", 0))
@@ -88,6 +90,8 @@ def game():
 @app.route("/wormageddonweb/GameList.asp")
 def gamelist():
     """list active games for channel"""
+    import logging
+
     cleanup_games()
     chan = request.args.get("Channel")
 
@@ -96,13 +100,17 @@ def gamelist():
         for g in state.games.values():
             if g["channel"] == chan:
                 pwd = 1 if g["password"] else 0
-                lines.append(
+                game_line = (
                     f"<GAME {g['name']} {g['host']} {g['address']} "
                     f"{g['location']} 1 {pwd} {g['id']} {g['type']}><BR>\r\n"
                 )
+                lines.append(game_line)
+                logging.debug(f"GameList for {chan}: {game_line.strip()}")
     lines.append("<GAMELISTEND>\r\n")
 
-    return "".join(lines)
+    result = "".join(lines)
+    logging.debug(f"GameList response ({len(state.games)} total games): {result!r}")
+    return result
 
 
 @app.route("/wormageddonweb/UpdatePlayerInfo.asp")

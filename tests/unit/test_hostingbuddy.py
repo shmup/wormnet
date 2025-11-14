@@ -48,11 +48,14 @@ def test_parse_privmsg_with_args():
 
 
 def test_parse_privmsg_no_command():
-    """Test parsing regular PRIVMSG without bot command"""
+    """Test parsing regular PRIVMSG - now matches since ! is optional"""
     line = ":Player!user@1.2.3.4 PRIVMSG #AnythingGoes :hello there"
     result = hostingbuddy.parse_privmsg(line)
 
-    assert result is None
+    # now matches because ! is optional - "hello" looks like a command
+    assert result is not None
+    assert result["command"] == "hello"
+    assert result["args"] == " there"
 
 
 def test_handle_ping():
@@ -104,6 +107,7 @@ def test_create_game_success(mock_get):
     mock_response = Mock()
     mock_response.text = "SetGameId: 123\n"
     mock_response.status_code = 200
+    mock_response.headers = {}  # add headers attribute for debug output
     mock_get.return_value = mock_response
 
     game_id = hostingbuddy.create_game(

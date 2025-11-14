@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""buddy - IRC bot for creating Worms Armageddon game lobbies"""
+"""HostingBuddy - IRC bot for creating Worms Armageddon game lobbies"""
 
 import re
 import socket
@@ -16,22 +16,22 @@ def connect_irc(host='localhost', port=6667):
     sock = socket.socket()
     sock.connect((host, port))
     send_line(sock, 'PASS ELSILRACLIHP')
-    send_line(sock, 'NICK buddy')
+    send_line(sock, 'NICK HostingBuddy')
     # USER <username>   <hostname> <servername> :<flags> <rank> <country> <version>
-    # USER buddy        host       server       :48      0      US        3.8.1
-    send_line(sock, 'USER buddy host server :51 11 ZZ 3.8.1')
+    # USER HostingBuddy host       server       :48      0      US        3.8.1
+    send_line(sock, 'USER HostingBuddy host server :51 11 ZZ 3.8.1')
     return sock
 
 
 def parse_privmsg(line):
     """Parse IRC PRIVMSG line to extract command info
 
-    Returns dict with nick, ip, target, command, args if line contains !command
+    Returns dict with nick, ip, target, command, args if line contains command
     Returns None otherwise
     """
-    # Pattern: :nick!user@ip PRIVMSG target :!command args
+    # Pattern: :nick!user@ip PRIVMSG target :!?command args (! is optional)
     match = re.match(
-        r':([^!]+)!([^@]+)@([^ ]+) PRIVMSG ([^ ]+) :!(\w+)(.*)',
+        r':([^!]+)!([^@]+)@([^ ]+) PRIVMSG ([^ ]+) :!?(\w+)(.*)',
         line
     )
     if not match:
@@ -84,7 +84,7 @@ class GameState:
         self.games.pop(nick, None)
 
 
-def create_game(nick, ip, channel, scheme='Intermediate', http_base='http://localhost'):
+def create_game(nick, ip, channel, scheme='Intermediate', http_base='http://localhost:8081'):
     """Create game via HTTP API
 
     Returns game_id on success, None on failure
@@ -92,27 +92,33 @@ def create_game(nick, ip, channel, scheme='Intermediate', http_base='http://loca
     url = f'{http_base}/wormageddonweb/Game.asp'
     params = {
         'Cmd': 'Create',
-        'Name': f"{nick}'s game",
+        'Name': f"{scheme}.for.{nick}",
         'Nick': nick,
         'HostIP': f'{ip}:17011',
+        'Pwd': '',  # No password
         'Chan': channel,
-        'Loc': 'US',
+        'Loc': '48',  # User flags - 48 is standard for most clients
         'Type': '0',
         'Scheme': scheme
     }
 
     try:
+        print(f"Creating game: {url}?{params}")
         response = requests.get(url, params=params, timeout=5)
+        print(f"Response status: {response.status_code}")
+        print(f"Response text: {response.text!r}")
+        print(f"Response headers: {dict(response.headers)}")
         if response.status_code == 200 and 'SetGameId:' in response.text:
             game_id = int(response.text.split(':')[1].strip())
             return game_id
-    except Exception:
+    except Exception as e:
+        print(f"Exception creating game: {e}")
         pass
 
     return None
 
 
-def close_game(game_id, http_base='http://localhost'):
+def close_game(game_id, http_base='http://localhost:8081'):
     """Close game via HTTP API
 
     Returns True on success, False on failure
@@ -133,10 +139,12 @@ def close_game(game_id, http_base='http://localhost'):
 def handle_host_command(sock, msg, state, channel='#hell'):
     """Handle !host command to create a game"""
     nick = msg['nick']
+    # Reply to channel if command was in channel, otherwise PM the user
+    reply_to = msg['target'] if msg['target'].startswith('#') else msg['nick']
 
     # Check if user already has a game
     if state.has_game(nick):
-        send_line(sock, f"PRIVMSG {msg['target']} :{nick}: Close your existing game first")
+        send_line(sock, f"PRIVMSG {reply_to} :{nick}: Close your existing game first")
         return
 
     # Create game
@@ -144,27 +152,29 @@ def handle_host_command(sock, msg, state, channel='#hell'):
 
     if game_id:
         state.store_game(nick, game_id, channel)
-        send_line(sock, f"PRIVMSG {msg['target']} :{nick}: Game created! Use !close to remove it.")
+        send_line(sock, f"PRIVMSG {reply_to} :{nick}: Game created (ID: {game_id}, IP: {msg['ip']}:17011). Use !close to remove it.")
     else:
-        send_line(sock, f"PRIVMSG {msg['target']} :{nick}: Failed to create game, try again")
+        send_line(sock, f"PRIVMSG {reply_to} :{nick}: Failed to create game, try again")
 
 
 def handle_close_command(sock, msg, state):
     """Handle !close command to close a game"""
     nick = msg['nick']
+    # Reply to channel if command was in channel, otherwise PM the user
+    reply_to = msg['target'] if msg['target'].startswith('#') else msg['nick']
 
     game = state.get_game(nick)
     if not game:
-        send_line(sock, f"PRIVMSG {msg['target']} :{nick}: You don't have an active game")
+        send_line(sock, f"PRIVMSG {reply_to} :{nick}: You don't have an active game")
         return
 
     success = close_game(game['game_id'])
 
     if success:
         state.remove_game(nick)
-        send_line(sock, f"PRIVMSG {msg['target']} :{nick}: Game closed.")
+        send_line(sock, f"PRIVMSG {reply_to} :{nick}: Game closed.")
     else:
-        send_line(sock, f"PRIVMSG {msg['target']} :{nick}: Failed to close game")
+        send_line(sock, f"PRIVMSG {reply_to} :{nick}: Failed to close game")
 
 
 def run_bot(host='localhost', port=6667, channels=None):
@@ -183,7 +193,7 @@ def run_bot(host='localhost', port=6667, channels=None):
     state = GameState()
     buffer = ''
 
-    print("buddy ready!")
+    print("HostingBuddy ready!")
 
     try:
         while True:

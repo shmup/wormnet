@@ -85,17 +85,15 @@ def test_game_create(client):
 
     assert response.status_code == 200
 
-    # should have SetGameId header
-    assert (
-        "SetGameId" in response.headers
-    ), f"Missing SetGameId header: {response.headers}"
+    # should have SetGameId in body
+    text = response.get_data(as_text=True)
+    assert "SetGameId:" in text, f"Missing SetGameId in body: {text}"
 
-    # extract game id from header
-    header_value = response.headers["SetGameId"]
+    # extract game id from body
     import re
 
-    match = re.search(r":\s*(\d+)", header_value)
-    assert match, f"Can't parse game ID from header: {header_value}"
+    match = re.search(r"SetGameId:\s*(\d+)", text)
+    assert match, f"Can't parse game ID from body: {text}"
 
     game_id = int(match.group(1))
     assert game_id > 0, f"Invalid game ID: {game_id}"
@@ -160,10 +158,10 @@ def test_game_close(client):
         },
     )
 
-    header_value = response.headers["SetGameId"]
     import re
 
-    match = re.search(r":\s*(\d+)", header_value)
+    text = response.get_data(as_text=True)
+    match = re.search(r"SetGameId:\s*(\d+)", text)
     game_id = int(match.group(1))
 
     # verify it exists
@@ -209,10 +207,10 @@ def test_game_name_length_limit(client):
         },
     )
 
-    header_value = response.headers["SetGameId"]
     import re
 
-    match = re.search(r":\s*(\d+)", header_value)
+    text = response.get_data(as_text=True)
+    match = re.search(r"SetGameId:\s*(\d+)", text)
     game_id = int(match.group(1))
 
     # check that name was truncated
@@ -237,10 +235,10 @@ def test_private_game_type(client):
         },
     )
 
-    header_value = response.headers["SetGameId"]
     import re
 
-    match = re.search(r":\s*(\d+)", header_value)
+    text = response.get_data(as_text=True)
+    match = re.search(r"SetGameId:\s*(\d+)", text)
     game_id = int(match.group(1))
 
     game = state.games[game_id]

@@ -116,9 +116,19 @@ class IRCClient:
                 target = parts[1]
                 msg = " ".join(parts[2:])[1:]  # remove leading :
                 if target.startswith("#") and target in self.channels:
+                    # channel message
                     self.broadcast_to_channel(
                         target, f":{self.nickname} PRIVMSG {target} :{msg}"
                     )
+                else:
+                    # private message to user
+                    with state.irc_lock:
+                        for client in state.irc_clients:
+                            if client.nickname == target:
+                                client.send(
+                                    f":{self.nickname}!~{self.username}@{self.addr[0]} PRIVMSG {target} :{msg}"
+                                )
+                                break
 
         elif cmd == "LIST" and self.registered:
             self.send(f":{config.IRC_HOST} 321 {self.nickname} Channel :Users Name")
