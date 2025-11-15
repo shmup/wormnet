@@ -1,0 +1,94 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+WA_EXE="$HOME/.var/app/org.winehq.Wine/data/wine/drive_c/worms/WA.exe"
+PLUS_EXE="$HOME/Games/worms/worms_armageddon_plus_1.1.5.exe"
+REG_PATH="HKEY_CURRENT_USER\\SOFTWARE\\Team17SoftwareLTD\\WormsArmageddon\\Options"
+
+# gamescope dimensions, outer and inner
+WINDOW_WIDTH=1280
+WINDOW_HEIGHT=1024
+GAME_WIDTH=1280
+GAME_HEIGHT=1024
+
+show_help() {
+  cat <<'EOF'
+usage: worms [command] [args]
+
+commands:
+  (none)              launch worms armageddon via wine + gamescope
+  install-plus        install WA-Plus
+  options             show all worms registry options
+  regedit [args]      open wine registry editor
+  help, -h, --help          show this help
+
+references:
+  https://github.com/Carlmundo/WA-Plus
+  https://github.com/ValveSoftware/gamescope
+EOF
+}
+
+cmd_install_plus() {
+  if [[ ! -f "$PLUS_EXE" ]]; then
+    echo "error: worms armageddon plus installer not found at '$PLUS_EXE'" >&2
+    exit 1
+  fi
+
+  cd "$(dirname "$WA_EXE")" || exit
+  flatpak run --command=bash org.winehq.Wine -c "wine '$PLUS_EXE'; wineserver -k"
+}
+
+cmd_launch() {
+  cd "$(dirname "$WA_EXE")" || exit
+  gamescope -W "$WINDOW_WIDTH" -H "$WINDOW_HEIGHT" -w "$GAME_WIDTH" -h "$GAME_HEIGHT" -b -- \
+    flatpak run --command=bash org.winehq.Wine -c "wine '$WA_EXE'; wineserver -k"
+}
+
+cmd_regedit() {
+  flatpak run --command=bash org.winehq.Wine -c "wine regedit; wineserver -k"
+}
+
+cmd_options() {
+  flatpak run --command=bash org.winehq.Wine -c "wine reg query '$REG_PATH'; wineserver -k" |
+    awk '/^[[:space:]]/ {
+      gsub(/^[[:space:]]+|[[:space:]]+$/, "")
+      match($0, /^(.+?)[[:space:]]{2,}(REG_\w+)[[:space:]]{2,}(.+)$/, arr)
+      if (arr[1] && arr[2] && arr[3]) {
+        printf "%s\t%s\t%s", arr[1], arr[2], arr[3]
+        if (arr[3] ~ /0x/) printf "\t%d", strtonum(arr[3])
+        printf "\n"
+      }
+    }' |
+    column -t -s $'\t'
+}
+
+main() {
+  local cmd="${1:-}"
+
+  case "$cmd" in
+  help | -h | --help)
+    show_help
+    ;;
+  install-plus)
+    cmd_install_plus
+    ;;
+  options)
+    cmd_options
+    ;;
+  regedit)
+    shift
+    cmd_regedit "$@"
+    ;;
+  "")
+    cmd_launch
+    ;;
+  *)
+    echo "error: unknown command '$cmd'" >&2
+    echo "run 'worms --help' for usage" >&2
+    exit 1
+    ;;
+  esac
+}
+
+main "$@"
