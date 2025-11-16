@@ -122,7 +122,7 @@ scheme format is comma-separated codes. examples:
 - `Loc` - location code (country/region)
 - `Type` - game type code (usually 0)
 
-**response:**
+**response body:**
 ```
 <NOTHING>
 ```
@@ -131,6 +131,7 @@ scheme format is comma-separated codes. examples:
 ```
 SetGameId: : 123
 ```
+(note: the header format is `SetGameId: : 123` with a space-colon-space before the ID)
 
 store this game in memory with auto-incrementing id. expire games after 5 minutes.
 
@@ -276,6 +277,7 @@ def scheme():
 
 @app.route('/wormageddonweb/Game.asp')
 def game():
+    from flask import Response
     cmd = request.args.get('Cmd')
     cleanup_games()
 
@@ -293,7 +295,7 @@ def game():
             'type': request.args.get('Type', '0'),
             'created': time.time(),
         }
-        resp = flask.Response("<NOTHING>")
+        resp = Response("<NOTHING>")
         resp.headers['SetGameId'] = f": {game_counter}"
         return resp
 

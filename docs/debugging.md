@@ -43,8 +43,8 @@ curl "http://wormnet1.team17.com/wormageddonweb/Login.asp?Username&Password"
 # returns: <CONNECT wormnet1.team17.com:6667>
 
 # create game
-curl "http://wormnet1.team17.com/wormageddonweb/Game.asp?Cmd=Create&Name=TestGame&Nick=Player1&HostIP=1.2.3.4:17011&Chan=AnythingGoes&Loc=US&Type=0&Scheme=Pf,Be"
-# returns: SetGameId: 12345
+curl "http://wormnet1.team17.com/wormageddonweb/Game.asp?Cmd=Create&Name=TestGame&Nick=Player1&HostIP=1.2.3.4:17011&Chan=AnythingGoes&Loc=US&Type=0&Scheme=Pf,Be" -v
+# returns: <NOTHING> (body) with header "SetGameId: : 12345" (note the double colon)
 
 # close game
 curl "http://wormnet1.team17.com/wormageddonweb/Game.asp?Cmd=Close&GameID=12345"
@@ -76,7 +76,7 @@ curl "http://localhost:8081/wormageddonweb/Login.asp"
 
 # create game
 curl "http://slime.green:8081/wormageddonweb/Game.asp?Cmd=Create&Name=TestGame&Nick=Player1&HostIP=1.2.3.4:17011&Chan=AnythingGoes&Loc=US&Type=0&Scheme=Pf,Be" -v
-# returns: SetGameId: 1
+# returns: <NOTHING> (body) with header "SetGameId: : 1" (note the double colon)
 
 # close game
 curl "http://slime.green:8081/wormageddonweb/Game.asp?Cmd=Close&GameID=1"
