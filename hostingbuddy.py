@@ -165,8 +165,10 @@ def create_game(nick, ip, channel, scheme='Intermediate', http_base='http://loca
         logger.debug(f"Response status: {response.status_code}")
         logger.debug(f"Response text: {response.text!r}")
         logger.debug(f"Response headers: {dict(response.headers)}")
-        if response.status_code == 200 and 'SetGameId:' in response.text:
-            game_id = int(response.text.split(':')[1].strip())
+        if response.status_code == 200 and 'SetGameId' in response.headers:
+            # Header format is "SetGameId: : 123" (note the ": " prefix)
+            game_id_header = response.headers.get('SetGameId')
+            game_id = int(game_id_header.split(':')[1].strip())
             return game_id
     except Exception as e:
         logger.error(f"Exception creating game: {e}")

@@ -105,9 +105,9 @@ def test_game_state_nonexistent():
 def test_create_game_success(mock_get):
     """Test creating game via HTTP API"""
     mock_response = Mock()
-    mock_response.text = "SetGameId: 123\n"
+    mock_response.text = "<NOTHING>"
     mock_response.status_code = 200
-    mock_response.headers = {}  # add headers attribute for debug output
+    mock_response.headers = {"SetGameId": ": 123"}  # header format is ": N"
     mock_get.return_value = mock_response
 
     game_id = hostingbuddy.create_game(
