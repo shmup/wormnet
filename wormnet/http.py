@@ -56,6 +56,7 @@ def game():
 
     if cmd == "Create":
         import logging
+        from flask import Response
 
         logging.debug(f"Game.asp Create params: {dict(request.args)}")
         with state.games_lock:
@@ -72,7 +73,9 @@ def game():
                 "scheme": request.args.get("Scheme", ""),
                 "created": time.time(),
             }
-            return f"SetGameId: {state.game_counter}"
+            resp = Response("<NOTHING>")
+            resp.headers["SetGameId"] = f": {state.game_counter}"
+            return resp
 
     elif cmd == "Close":
         gid = int(request.args.get("GameID", 0))
