@@ -72,6 +72,8 @@ Examples:
                         choices=['DEBUG', 'INFO', 'WARNING', 'ERROR'],
                         help='Logging level (default: INFO)')
 
+    parser.add_argument('--public-ip', help='Public IP/hostname for game hosting (overrides detected IP from IRC)')
+
     return parser
 
 
@@ -103,7 +105,7 @@ def parse_privmsg(line):
     if not match:
         return None
 
-    nick, user, ip, target, command, args = match.groups()
+    nick, _, ip, target, command, args = match.groups()
     return {'nick': nick, 'ip': ip, 'target': target, 'command': command, 'args': args}
 
 
@@ -141,17 +143,20 @@ class GameState:
         self.games.pop(nick, None)
 
 
-def create_game(nick, ip, channel, scheme='Intermediate', http_base='http://localhost:8081'):
+def create_game(nick, ip, channel, scheme='Intermediate', http_base='http://localhost:8081', public_ip=None):
     """Create game via HTTP API
 
     Returns game_id on success, None on failure
     """
+    # Use public_ip if provided, otherwise fall back to detected IP
+    host_ip = public_ip if public_ip else ip
+
     url = f'{http_base}/wormageddonweb/Game.asp'
     params = {
         'Cmd': 'Create',
         'Name': f"{scheme}.for.{nick}",
         'Nick': nick,
-        'HostIP': f'{ip}:17011',
+        'HostIP': f'{host_ip}:17011',
         'Pwd': '',  # No password
         'Chan': channel,
         'Loc': '48',  # User flags - 48 is standard for most clients
@@ -167,7 +172,7 @@ def create_game(nick, ip, channel, scheme='Intermediate', http_base='http://loca
         logger.debug(f"Response headers: {dict(response.headers)}")
         if response.status_code == 200 and 'SetGameId' in response.headers:
             # Header format is "SetGameId: : 123" (note the ": " prefix)
-            game_id_header = response.headers.get('SetGameId')
+            game_id_header = response.headers.get('SetGameId') or ''
             game_id = int(game_id_header.split(':')[1].strip())
             return game_id
     except Exception as e:
@@ -192,7 +197,7 @@ def close_game(game_id, http_base='http://localhost:8081'):
         return False
 
 
-def handle_host_command(sock, msg, state, channel='#hell'):
+def handle_host_command(sock, msg, state, channel='#hell', public_ip=None):
     """Handle !host command to create a game"""
     nick = msg['nick']
     # Reply to channel if command was in channel, otherwise PM the user
@@ -204,13 +209,15 @@ def handle_host_command(sock, msg, state, channel='#hell'):
         return
 
     # Create game
-    game_id = create_game(nick, msg['ip'], channel)
+    game_id = create_game(nick, msg['ip'], channel, public_ip=public_ip)
 
     if game_id:
+        # Show which IP is being used for the game
+        host_ip = public_ip if public_ip else msg['ip']
         state.store_game(nick, game_id, channel)
         send_line(
             sock,
-            f"PRIVMSG {reply_to} :{nick}: Game created (ID: {game_id}, IP: {msg['ip']}:17011). Use !close to remove it."
+            f"PRIVMSG {reply_to} :{nick}: Game created (ID: {game_id}, IP: {host_ip}:17011). Use !close to remove it."
         )
     else:
         send_line(sock, f"PRIVMSG {reply_to} :{nick}: Failed to create game, try again")
@@ -236,7 +243,7 @@ def handle_close_command(sock, msg, state):
         send_line(sock, f"PRIVMSG {reply_to} :{nick}: Failed to close game")
 
 
-def run_bot(host='localhost', port=6667, channels=None):
+def run_bot(host='localhost', port=6667, channels=None, public_ip=None):
     """Main bot loop"""
     if channels is None:
         channels = ['#hell']
@@ -248,6 +255,9 @@ def run_bot(host='localhost', port=6667, channels=None):
     for channel in channels:
         send_line(sock, f'JOIN {channel}')
         logger.info(f"Joined {channel}")
+
+    if public_ip:
+        logger.info(f"Using public IP for games: {public_ip}")
 
     state = GameState()
     buffer = ''
@@ -282,7 +292,7 @@ def run_bot(host='localhost', port=6667, channels=None):
                     if msg['command'] == 'host':
                         # Extract channel from target or default
                         channel = msg['target'].lstrip('#') if msg['target'].startswith('#') else 'hell'
-                        handle_host_command(sock, msg, state, channel)
+                        handle_host_command(sock, msg, state, channel, public_ip=public_ip)
                     elif msg['command'] == 'close':
                         handle_close_command(sock, msg, state)
 
@@ -301,10 +311,10 @@ def main():
     setup_logging(args.log_level)
 
     logger.info("Starting HostingBuddy")
-    logger.debug(f"Arguments: host={args.host}, port={args.port}, channels={args.channels}")
+    logger.debug(f"Arguments: host={args.host}, port={args.port}, channels={args.channels}, public_ip={args.public_ip}")
 
     # Run the bot
-    run_bot(host=args.host, port=args.port, channels=args.channels)
+    run_bot(host=args.host, port=args.port, channels=args.channels, public_ip=args.public_ip)
 
 
 if __name__ == '__main__':
